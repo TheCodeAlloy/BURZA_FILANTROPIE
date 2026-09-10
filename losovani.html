@@ -65,8 +65,62 @@
     }
     .vysledek-cislo { font-size: 64px; font-weight: 700; color: var(--losovani); line-height: 1; margin-bottom: 8px; }
     .vysledek-popis { font-size: 15px; color: var(--text-slaby); }
-    .los-probiha { text-align: center; padding: 30px 0; }
+    .los-probiha { text-align: center; padding: 20px 0; }
     .los-probiha h3 { color: var(--losovani); margin: 14px 0 6px; }
+
+    /* ---- Scéna klobouku ---- */
+    .klobouk-scena { position: relative; width: 200px; height: 180px; margin: 0 auto; }
+
+    /* Poletující losy nad kloboukem */
+    .losy { position: absolute; top: 0; left: 0; right: 0; height: 70px; }
+    .los {
+      position: absolute; width: 26px; height: 32px;
+      background: #fff; border: 2px solid var(--losovani); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: var(--losovani); font-size: 14px;
+      animation: poletovani 1.4s ease-in-out infinite;
+    }
+    .los:nth-child(1) { left: 20px;  animation-delay: 0s;   }
+    .los:nth-child(2) { left: 60px;  animation-delay: 0.2s; }
+    .los:nth-child(3) { left: 100px; animation-delay: 0.4s; }
+    .los:nth-child(4) { left: 140px; animation-delay: 0.6s; }
+    .los:nth-child(5) { left: 80px;  animation-delay: 0.8s; }
+    @keyframes poletovani {
+      0%,100% { transform: translateY(0) rotate(-6deg); opacity: 0.85; }
+      50%     { transform: translateY(-14px) rotate(6deg); opacity: 1; }
+    }
+
+    /* Klobouk */
+    .klobouk { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); }
+    .klobouk-strecha {
+      width: 90px; height: 70px; margin: 0 auto;
+      background: linear-gradient(180deg, #37474f, #263238);
+      border-radius: 12px 12px 6px 6px;
+    }
+    .klobouk-krempa {
+      width: 150px; height: 22px; margin: -6px auto 0;
+      background: #263238; border-radius: 50%;
+    }
+
+    /* Ruka s lístkem, která vyjede z klobouku */
+    .ruka {
+      position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+      opacity: 0;
+    }
+    .ruka.tahni { animation: tahni 1.2s ease-out forwards; }
+    @keyframes tahni {
+      0%   { opacity: 0; transform: translate(-50%, 30px); }
+      40%  { opacity: 1; transform: translate(-50%, -10px); }
+      100% { opacity: 1; transform: translate(-50%, -40px); }
+    }
+    .listek {
+      width: 44px; height: 54px; background: #fff;
+      border: 3px solid var(--losovani); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: bold; color: var(--losovani);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
     .skryto { display: none !important; }
   </style>
 </head>
@@ -96,9 +150,21 @@
           <button id="btnLosovat" class="btn btn-losovat">🎲 Losovat pořadí</button>
         </div>
         <div id="losProbiha" class="los-probiha skryto">
-          <div class="spinner spinner-los"></div>
+          <div class="klobouk-scena">
+            <div class="losy">
+              <span class="los">?</span><span class="los">?</span><span class="los">?</span>
+              <span class="los">?</span><span class="los">?</span>
+            </div>
+            <div class="klobouk">
+              <div class="klobouk-strecha"></div>
+              <div class="klobouk-krempa"></div>
+            </div>
+            <div class="ruka" id="ruka">
+              <div class="listek" id="listek">?</div>
+            </div>
+          </div>
           <h3>Losování probíhá…</h3>
-          <p>Vydržte prosím.</p>
+          <p id="losText">Mícháme losy v klobouku…</p>
         </div>
       </div>
 
@@ -171,21 +237,52 @@
       document.getElementById('losControls').classList.add('skryto');
       document.getElementById('losProbiha').classList.remove('skryto');
 
+      // Střídáme texty během animace, ať to žije.
+      const texty = [
+        'Mícháme losy v klobouku…',
+        'Pořádně zamícháme…',
+        'Sáhneme dovnitř…',
+        'A táhneme lísteček…'
+      ];
+      let krok = 0;
+      const losText = document.getElementById('losText');
+      const textInterval = setInterval(() => {
+        krok++;
+        if (krok < texty.length) losText.textContent = texty[krok];
+      }, 1200);
+
+      // Zavoláme server hned (číslo se vylosuje na serveru), ale výsledek
+      // odhalíme až po ~5 vteřinách animace.
+      const start = Date.now();
       posli('losovani', session)
         .then(res => {
-          if (!res.success) {
-            document.getElementById('losProbiha').classList.add('skryto');
-            document.getElementById('losControls').classList.remove('skryto');
-            alert(res.message || 'Losování selhalo.');
-            return;
-          }
-          // Malá pauza pro efekt, pak výsledek.
+          const uplynulo = Date.now() - start;
+          const zbyva = Math.max(0, 5000 - uplynulo); // doběhne do 5 vteřin
+
           setTimeout(() => {
-            document.getElementById('vysledekCislo').textContent = res.cislo;
-            ukazStav('vysledekSekce');
-          }, 1200);
+            clearInterval(textInterval);
+
+            if (!res.success) {
+              document.getElementById('losProbiha').classList.add('skryto');
+              document.getElementById('losControls').classList.remove('skryto');
+              alert(res.message || 'Losování selhalo.');
+              return;
+            }
+
+            // Vytáhneme lísteček s číslem z klobouku.
+            document.getElementById('listek').textContent = res.cislo;
+            document.getElementById('ruka').classList.add('tahni');
+            losText.textContent = 'A máme vylosováno!';
+
+            // Po dojetí animace tažení ukážeme velký výsledek.
+            setTimeout(() => {
+              document.getElementById('vysledekCislo').textContent = res.cislo;
+              ukazStav('vysledekSekce');
+            }, 1300);
+          }, zbyva);
         })
         .catch(() => {
+          clearInterval(textInterval);
           document.getElementById('losProbiha').classList.add('skryto');
           document.getElementById('losControls').classList.remove('skryto');
           alert('Chyba spojení při losování.');
