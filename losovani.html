@@ -68,50 +68,59 @@
     .los-probiha { text-align: center; padding: 20px 0; }
     .los-probiha h3 { color: var(--losovani); margin: 14px 0 6px; }
 
-    /* ---- Scéna klobouku ---- */
-    .klobouk-scena { position: relative; width: 200px; height: 180px; margin: 0 auto; }
+    /* ---- Scéna klobouku (vzhůru nohama, jako mísa) ---- */
+    .klobouk-scena { position: relative; width: 200px; height: 190px; margin: 0 auto; }
 
-    /* Poletující losy nad kloboukem */
-    .losy { position: absolute; top: 0; left: 0; right: 0; height: 70px; }
+    /* Losy vylétávají z klobouku ven nahoru */
+    .losy { position: absolute; top: 0; left: 0; right: 0; height: 120px; }
     .los {
-      position: absolute; width: 26px; height: 32px;
+      position: absolute; bottom: 0; width: 26px; height: 32px;
       background: #fff; border: 2px solid var(--losovani); border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
       font-weight: bold; color: var(--losovani); font-size: 14px;
-      animation: poletovani 1.4s ease-in-out infinite;
+      opacity: 0;
+      animation: vyletavani 1.8s ease-out infinite;
     }
-    .los:nth-child(1) { left: 20px;  animation-delay: 0s;   }
-    .los:nth-child(2) { left: 60px;  animation-delay: 0.2s; }
-    .los:nth-child(3) { left: 100px; animation-delay: 0.4s; }
-    .los:nth-child(4) { left: 140px; animation-delay: 0.6s; }
-    .los:nth-child(5) { left: 80px;  animation-delay: 0.8s; }
-    @keyframes poletovani {
-      0%,100% { transform: translateY(0) rotate(-6deg); opacity: 0.85; }
-      50%     { transform: translateY(-14px) rotate(6deg); opacity: 1; }
+    .los:nth-child(1) { left: 55px;  animation-delay: 0s;   }
+    .los:nth-child(2) { left: 90px;  animation-delay: 0.35s; }
+    .los:nth-child(3) { left: 120px; animation-delay: 0.7s; }
+    .los:nth-child(4) { left: 70px;  animation-delay: 1.05s; }
+    .los:nth-child(5) { left: 105px; animation-delay: 1.4s; }
+    /* Vyletí z klobouku nahoru, mírně do strany, a zmizí. */
+    @keyframes vyletavani {
+      0%   { transform: translateY(20px) translateX(0) rotate(0deg) scale(0.6); opacity: 0; }
+      25%  { opacity: 1; }
+      100% { transform: translateY(-90px) translateX(var(--odlet, 20px)) rotate(40deg) scale(1); opacity: 0; }
     }
+    .los:nth-child(1) { --odlet: -30px; }
+    .los:nth-child(2) { --odlet: 15px; }
+    .los:nth-child(3) { --odlet: 35px; }
+    .los:nth-child(4) { --odlet: -15px; }
+    .los:nth-child(5) { --odlet: 25px; }
 
-    /* Klobouk */
+    /* Klobouk vzhůru nohama: krempa nahoře, kupole dolů (jako mísa) */
     .klobouk { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); }
+    .klobouk-krempa {
+      width: 150px; height: 22px; margin: 0 auto -6px;
+      background: #263238; border-radius: 50%;
+      position: relative; z-index: 2;
+    }
     .klobouk-strecha {
       width: 90px; height: 70px; margin: 0 auto;
-      background: linear-gradient(180deg, #37474f, #263238);
-      border-radius: 12px 12px 6px 6px;
-    }
-    .klobouk-krempa {
-      width: 150px; height: 22px; margin: -6px auto 0;
-      background: #263238; border-radius: 50%;
+      background: linear-gradient(180deg, #263238, #37474f);
+      border-radius: 6px 6px 40px 40px;
     }
 
-    /* Ruka s lístkem, která vyjede z klobouku */
+    /* Ruka s lístkem, která vyjede z klobouku nahoru */
     .ruka {
-      position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
-      opacity: 0;
+      position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+      opacity: 0; z-index: 3;
     }
     .ruka.tahni { animation: tahni 1.2s ease-out forwards; }
     @keyframes tahni {
-      0%   { opacity: 0; transform: translate(-50%, 30px); }
-      40%  { opacity: 1; transform: translate(-50%, -10px); }
-      100% { opacity: 1; transform: translate(-50%, -40px); }
+      0%   { opacity: 0; transform: translate(-50%, 20px); }
+      40%  { opacity: 1; transform: translate(-50%, -20px); }
+      100% { opacity: 1; transform: translate(-50%, -50px); }
     }
     .listek {
       width: 44px; height: 54px; background: #fff;
@@ -156,8 +165,8 @@
               <span class="los">?</span><span class="los">?</span>
             </div>
             <div class="klobouk">
-              <div class="klobouk-strecha"></div>
               <div class="klobouk-krempa"></div>
+              <div class="klobouk-strecha"></div>
             </div>
             <div class="ruka" id="ruka">
               <div class="listek" id="listek">?</div>
@@ -239,10 +248,10 @@
 
       // Střídáme texty během animace, ať to žije.
       const texty = [
-        'Mícháme losy v klobouku…',
-        'Pořádně zamícháme…',
-        'Sáhneme dovnitř…',
-        'A táhneme lísteček…'
+        'Losy vylétávají z klobouku…',
+        'Poletují sem a tam…',
+        'Který to bude?',
+        'Táhneme ten pravý…'
       ];
       let krok = 0;
       const losText = document.getElementById('losText');
