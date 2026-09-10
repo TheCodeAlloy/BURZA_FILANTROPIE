@@ -180,6 +180,13 @@
           <input id="projekt" autocomplete="off" placeholder="Název projektu">
         </div>
 
+        <!-- HONEYPOT: skryté pole proti botům. Člověk ho nevidí, bot ho vyplní.
+             Necháváme mimo obrazovku (ne display:none, to někteří boti detekují). -->
+        <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
+          <label>Web (nevyplňujte)</label>
+          <input id="web" name="web" tabindex="-1" autocomplete="off">
+        </div>
+
         <button id="btnOdeslat" class="btn">Odeslat registraci</button>
       </form>
 
@@ -249,11 +256,13 @@
         okres:            document.getElementById('okres').value,
         email:            document.getElementById('email').value.trim(),
         nazev_projektu:   document.getElementById('projekt').value.trim(),
-        typ_prezentace:   document.getElementById('typ').value
+        typ_prezentace:   document.getElementById('typ').value,
+        web:              document.getElementById('web').value  // honeypot
       };
 
-      // Kontrola vyplnění.
+      // Kontrola vyplnění (honeypot "web" schválně přeskočíme — má být prázdný).
       for (const k in data) {
+        if (k === 'web') continue;
         if (!data[k]) { zobrazChybu('Vyplňte prosím všechna pole.'); return; }
       }
       const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
