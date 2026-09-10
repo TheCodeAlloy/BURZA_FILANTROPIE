@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Losování — Burza filantropie</title>
+  <style>
+    :root {
+      --akcent: #3a7563;
+      --akcent-tmavy: #2c5a4c;
+      --plocha: #f2f5f3;
+      --text: #24302b;
+      --text-slaby: #5f6f68;
+      --linka: #d9e2dd;
+      --chyba: #b3261e;
+      --chyba-plocha: #fdecea;
+      --ok: #1e7d4f;
+      --losovani: #e65100;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: var(--plocha); color: var(--text); line-height: 1.6;
+      padding: 20px; min-height: 100vh; display: flex;
+      align-items: flex-start; justify-content: center;
+    }
+    .karta {
+      background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+      width: 100%; max-width: 520px; overflow: hidden; margin-top: 24px;
+    }
+    .hlava { background: var(--akcent); color: #fff; padding: 32px 32px 26px; }
+    .hlava h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+    .hlava p { opacity: 0.9; font-size: 15px; }
+    .telo { padding: 28px 32px 32px; }
+    .pole { margin-bottom: 20px; }
+    .pole label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 7px; }
+    .pole input {
+      width: 100%; padding: 13px 14px; font-size: 16px;
+      border: 1.5px solid var(--linka); border-radius: 10px; font-family: inherit;
+    }
+    .pole input:focus { outline: none; border-color: var(--akcent); box-shadow: 0 0 0 3px rgba(58,117,99,0.14); }
+    .btn {
+      width: 100%; padding: 15px; font-size: 16px; font-weight: 600; border: none;
+      border-radius: 10px; background: var(--akcent); color: #fff; cursor: pointer;
+    }
+    .btn:hover:not(:disabled) { background: var(--akcent-tmavy); }
+    .btn:disabled { opacity: 0.6; cursor: default; }
+    .btn-losovat { background: var(--losovani); font-size: 18px; padding: 18px; }
+    .btn-losovat:hover:not(:disabled) { background: #cc4700; }
+    .hlaska { padding: 14px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 15px; }
+    .hlaska-chyba { background: var(--chyba-plocha); color: var(--chyba); }
+    .nacitani { text-align: center; padding: 40px 0; color: var(--text-slaby); }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid var(--linka);
+      border-top-color: var(--akcent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+    }
+    .spinner-los { border-top-color: var(--losovani); width: 60px; height: 60px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .vitejte { background: rgba(58,117,99,0.08); border-radius: 10px; padding: 16px; margin-bottom: 20px; font-size: 14px; }
+    .vitejte b { color: var(--akcent-tmavy); }
+    .vysledek {
+      text-align: center; padding: 30px 20px;
+      background: #fff3e0; border: 3px solid #ff9800; border-radius: 14px; margin-top: 10px;
+    }
+    .vysledek-cislo { font-size: 64px; font-weight: 700; color: var(--losovani); line-height: 1; margin-bottom: 8px; }
+    .vysledek-popis { font-size: 15px; color: var(--text-slaby); }
+    .los-probiha { text-align: center; padding: 30px 0; }
+    .los-probiha h3 { color: var(--losovani); margin: 14px 0 6px; }
+    .skryto { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="karta">
+    <div class="hlava">
+      <h1>Losování pořadí</h1>
+      <p>Burza filantropie — přihlaste se a vylosujte si pořadí prezentace.</p>
+    </div>
+    <div class="telo">
+
+      <div id="stavNacitani" class="nacitani"><div class="spinner"></div>Načítám…</div>
+
+      <!-- Přihlášení -->
+      <div id="prihlaseni" class="skryto">
+        <div id="hlaska" class="hlaska hlaska-chyba skryto"></div>
+        <div class="pole"><label for="ic">IČ organizace</label><input id="ic" inputmode="numeric" autocomplete="off"></div>
+        <div class="pole"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email"></div>
+        <div class="pole"><label for="kod">Bezpečnostní kód</label><input id="kod" autocomplete="off"></div>
+        <button id="btnPrihlasit" class="btn">Přihlásit se</button>
+      </div>
+
+      <!-- Losování -->
+      <div id="losovaniSekce" class="skryto">
+        <div id="vitejte" class="vitejte"></div>
+        <div id="losControls">
+          <button id="btnLosovat" class="btn btn-losovat">🎲 Losovat pořadí</button>
+        </div>
+        <div id="losProbiha" class="los-probiha skryto">
+          <div class="spinner spinner-los"></div>
+          <h3>Losování probíhá…</h3>
+          <p>Vydržte prosím.</p>
+        </div>
+      </div>
+
+      <!-- Výsledek -->
+      <div id="vysledekSekce" class="skryto">
+        <div class="vysledek">
+          <div class="vysledek-cislo" id="vysledekCislo"></div>
+          <div class="vysledek-popis">Vaše vylosované pořadí</div>
+        </div>
+        <div class="vitejte" style="margin-top:16px;">📧 Potvrzení jsme poslali na váš e-mail.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ⚠ SEM VLOŽ URL veřejného API (stejná jako u registrace, s ?api=1 na GET):
+    const API_URL = 'SEM_VLOZ_URL_VEREJNEHO_API';
+
+    let session = {};
+
+    // Losovací stránka nepotřebuje nic načítat dopředu — rovnou ukážeme přihlášení.
+    ukazStav('prihlaseni');
+
+    function ukazStav(id) {
+      ['stavNacitani','prihlaseni','losovaniSekce','vysledekSekce'].forEach(s =>
+        document.getElementById(s).classList.add('skryto'));
+      document.getElementById(id).classList.remove('skryto');
+    }
+
+    // ---- Přihlášení ----
+    document.getElementById('btnPrihlasit').onclick = prihlasit;
+    ['ic','email','kod'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') prihlasit(); });
+    });
+
+    function prihlasit() {
+      const ic = document.getElementById('ic').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const kod = document.getElementById('kod').value.trim();
+      skryjHlasku();
+      if (!ic || !email || !kod) { chyba('Vyplňte prosím všechna pole.'); return; }
+
+      const btn = document.getElementById('btnPrihlasit');
+      btn.disabled = true; btn.textContent = 'Ověřuji…';
+
+      posli('over_losovani', { ic, email, kod })
+        .then(res => {
+          btn.disabled = false; btn.textContent = 'Přihlásit se';
+          if (!res.success) { chyba(res.message || 'Přihlášení selhalo.'); return; }
+          session = { ic, email, kod };
+
+          if (res.uzLosoval) {
+            // Už losoval — rovnou ukážeme výsledek.
+            document.getElementById('vysledekCislo').textContent = res.cislo;
+            ukazStav('vysledekSekce');
+          } else {
+            document.getElementById('vitejte').innerHTML =
+              'Vítejte, <b>' + escapeHtml(res.organizace) + '</b><br>' +
+              'Projekt: <b>' + escapeHtml(res.projekt) + '</b><br>' +
+              'Typ prezentace: <b>' + escapeHtml(res.typ) + '</b>';
+            ukazStav('losovaniSekce');
+          }
+        })
+        .catch(() => { btn.disabled = false; btn.textContent = 'Přihlásit se'; chyba('Chyba spojení. Zkuste to znovu.'); });
+    }
+
+    // ---- Losování ----
+    document.getElementById('btnLosovat').onclick = () => {
+      document.getElementById('losControls').classList.add('skryto');
+      document.getElementById('losProbiha').classList.remove('skryto');
+
+      posli('losovani', session)
+        .then(res => {
+          if (!res.success) {
+            document.getElementById('losProbiha').classList.add('skryto');
+            document.getElementById('losControls').classList.remove('skryto');
+            alert(res.message || 'Losování selhalo.');
+            return;
+          }
+          // Malá pauza pro efekt, pak výsledek.
+          setTimeout(() => {
+            document.getElementById('vysledekCislo').textContent = res.cislo;
+            ukazStav('vysledekSekce');
+          }, 1200);
+        })
+        .catch(() => {
+          document.getElementById('losProbiha').classList.add('skryto');
+          document.getElementById('losControls').classList.remove('skryto');
+          alert('Chyba spojení při losování.');
+        });
+    };
+
+    // ---- Komunikace s API (text/plain kvůli CORS) ----
+    function posli(akce, data) {
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ akce: akce, data: data })
+      }).then(r => r.json());
+    }
+
+    function chyba(text) {
+      const h = document.getElementById('hlaska');
+      h.textContent = text; h.classList.remove('skryto');
+    }
+    function skryjHlasku() { document.getElementById('hlaska').classList.add('skryto'); }
+    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+  </script>
+</body>
+</html>
